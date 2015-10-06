@@ -1,14 +1,42 @@
 package main
 
 import (
-	"container/list"
 	"fmt"
 )
 
 var MaxRow int = 5
 
+//------------------------------------- Moves ------------------------------------
+type Move struct {
+	Row      int
+	StartPos int
+	Count    int
+}
+
+type Moves struct {
+	AllMoves        [40]Move
+	NoOfMoves       int
+	NoOfMovesPlayed int
+}
+
+func (m *Moves) Add(row int, startPos int, count int) {
+	m.AllMoves[m.NoOfMoves].Row = row
+	m.AllMoves[m.NoOfMoves].StartPos = startPos
+	m.AllMoves[m.NoOfMoves].Count = count
+	m.NoOfMoves++
+}
+
+func (m *Moves) Reset() {
+	m.NoOfMoves = 0
+}
+
+//------------------------------------- Board ------------------------------------
+
 type Board struct {
-	Box [][]int
+	Box             [][]int
+	moves           Moves
+	MaxCut          int
+	CurrentCutCount int
 }
 
 func (b *Board) Init() {
@@ -16,6 +44,7 @@ func (b *Board) Init() {
 	for i := 0; i < MaxRow; i++ {
 		b.Box[i] = make([]int, i+1)
 	}
+	b.MaxCut = MaxRow * (MaxRow + 1) / 2
 }
 
 func (b *Board) Deinit() {
@@ -32,16 +61,51 @@ func (b *Board) Print() {
 	}
 }
 
-func (b *Board) Move(row int, startPos int, count int) {
-	c := startPos
-	for i := 0; i < count; i++ {
-		b.Box[row][c] = 1
+func (b *Board) Move(m Move) {
+	c := m.StartPos
+	for i := 0; i < m.Count; i++ {
+		b.Box[m.Row][c] = 1
+		b.CurrentCutCount++
 		c++
 	}
+	b.moves.NoOfMovesPlayed++
 }
 
-func (b *Board) GetAllMovesOnRow(row int) *list.List {
-	result := list.New()
+func (b *Board) UndoMove(m Move) {
+	c := m.StartPos
+	for i := 0; i < m.Count; i++ {
+		b.Box[m.Row][c] = 0
+		b.CurrentCutCount--
+		c++
+	}
+	b.moves.NoOfMovesPlayed--
+}
+
+func (b *Board) isValidMove(m Move) bool {
+	c := m.StartPos
+	for i := 0; i < m.Count; i++ {
+		if b.Box[m.Row][c] == 1 {
+			return false
+		}
+		c++
+	}
+	return true
+}
+
+func (b *Board) isLoser() bool {
+	return (b.CurrentCutCount == b.MaxCut)
+}
+
+func (b *Board) GetAllMoves() *Moves {
+	b.moves.Reset()
+	for i := 0; i < MaxRow; i++ {
+		b.GetAllMovesOnRow(i)
+	}
+	return &b.moves
+}
+
+func (b *Board) GetAllMovesOnRow(row int) {
+	//result := list.New()
 	flagFirst := true
 	cFirst := 0
 	count := 0
@@ -69,14 +133,14 @@ func (b *Board) GetAllMovesOnRow(row int) *list.List {
 			} else {
 
 				if count == sc {
-					l := list.New()
 					//fmt.Printf("Added %d %d\n", cFirst, sc)
-					v := cFirst
-					for x := 0; x < sc; x++ {
+					/*for x := 0; x < sc; x++ {
 						l.PushBack(v)
 						v++
 					}
 					result.PushBack(l)
+					*/
+					b.moves.Add(row, cFirst, sc)
 
 					c = cFirst
 					flagFirst = true
@@ -87,16 +151,15 @@ func (b *Board) GetAllMovesOnRow(row int) *list.List {
 
 		} //end of for(c)
 		if count == sc {
-			l := list.New()
-
 			//	fmt.Printf("Added %d %d\n", cFirst, sc)
-			v := cFirst
-			for x := 0; x < sc; x++ {
+			/*for x := 0; x < sc; x++ {
 				l.PushBack(v)
 				v++
 			}
-
 			result.PushBack(l)
+			*/
+			b.moves.Add(row, cFirst, sc)
+
 			flagFirst = true
 			count = 0
 		}
@@ -105,11 +168,10 @@ func (b *Board) GetAllMovesOnRow(row int) *list.List {
 		flagFirst = true
 	}
 	//fmt.Println(result)
-	return result
 }
 
 func (b *Board) PrintAllMoves() {
-	for i := 0; i < MaxRow; i++ {
+	/*for i := 0; i < MaxRow; i++ {
 		result := b.GetAllMovesOnRow(i)
 		for e := result.Front(); e != nil; e = e.Next() {
 			//fmt.Println(e.Value)
@@ -122,5 +184,5 @@ func (b *Board) PrintAllMoves() {
 
 		fmt.Printf("Total Moves (%d): %d\n", i, result.Len())
 	}
-
+	*/
 }
