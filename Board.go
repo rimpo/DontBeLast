@@ -6,13 +6,12 @@ import (
 
 var MaxRow int = 5
 
-//------------------------------------- Board ------------------------------------
-
 type Board struct {
 	Box             [][]int
 	MaxCut          int
 	CurrentCutCount int
-	allocator       Allocator
+	//allocator       Allocator
+	allocator CustomAllocator
 }
 
 func (b *Board) Init() {

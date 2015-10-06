@@ -14,6 +14,7 @@ type Moves struct {
 	AllMoves        [64]Move
 	NoOfMoves       int
 	NoOfMovesPlayed int
+	Next            *Moves
 }
 
 func (m *Moves) Add(row int, startPos int, count int) {
