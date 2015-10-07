@@ -6,37 +6,13 @@ import (
 
 var MaxRow int = 5
 
-//------------------------------------- Moves ------------------------------------
-type Move struct {
-	Row      int
-	StartPos int
-	Count    int
-}
-
-type Moves struct {
-	AllMoves        [40]Move
-	NoOfMoves       int
-	NoOfMovesPlayed int
-}
-
-func (m *Moves) Add(row int, startPos int, count int) {
-	m.AllMoves[m.NoOfMoves].Row = row
-	m.AllMoves[m.NoOfMoves].StartPos = startPos
-	m.AllMoves[m.NoOfMoves].Count = count
-	m.NoOfMoves++
-}
-
-func (m *Moves) Reset() {
-	m.NoOfMoves = 0
-}
-
 //------------------------------------- Board ------------------------------------
 
 type Board struct {
 	Box             [][]int
-	moves           Moves
 	MaxCut          int
 	CurrentCutCount int
+	allocator       Allocator
 }
 
 func (b *Board) Init() {
@@ -45,6 +21,7 @@ func (b *Board) Init() {
 		b.Box[i] = make([]int, i+1)
 	}
 	b.MaxCut = MaxRow * (MaxRow + 1) / 2
+	b.allocator.Init(1000)
 }
 
 func (b *Board) Deinit() {
@@ -61,14 +38,13 @@ func (b *Board) Print() {
 	}
 }
 
-func (b *Board) Move(m Move) {
+func (b *Board) Move(m Move, token int) {
 	c := m.StartPos
 	for i := 0; i < m.Count; i++ {
-		b.Box[m.Row][c] = 1
+		b.Box[m.Row][c] = token
 		b.CurrentCutCount++
 		c++
 	}
-	b.moves.NoOfMovesPlayed++
 }
 
 func (b *Board) UndoMove(m Move) {
@@ -78,13 +54,12 @@ func (b *Board) UndoMove(m Move) {
 		b.CurrentCutCount--
 		c++
 	}
-	b.moves.NoOfMovesPlayed--
 }
 
 func (b *Board) isValidMove(m Move) bool {
 	c := m.StartPos
 	for i := 0; i < m.Count; i++ {
-		if b.Box[m.Row][c] == 1 {
+		if b.Box[m.Row][c] != 0 {
 			return false
 		}
 		c++
@@ -97,14 +72,14 @@ func (b *Board) isLoser() bool {
 }
 
 func (b *Board) GetAllMoves() *Moves {
-	b.moves.Reset()
+	moves := b.allocator.Capture()
 	for i := 0; i < MaxRow; i++ {
-		b.GetAllMovesOnRow(i)
+		b.GetAllMovesOnRow(i, moves)
 	}
-	return &b.moves
+	return moves
 }
 
-func (b *Board) GetAllMovesOnRow(row int) {
+func (b *Board) GetAllMovesOnRow(row int, moves *Moves) {
 	//result := list.New()
 	flagFirst := true
 	cFirst := 0
@@ -140,7 +115,7 @@ func (b *Board) GetAllMovesOnRow(row int) {
 					}
 					result.PushBack(l)
 					*/
-					b.moves.Add(row, cFirst, sc)
+					moves.Add(row, cFirst, sc)
 
 					c = cFirst
 					flagFirst = true
@@ -158,7 +133,7 @@ func (b *Board) GetAllMovesOnRow(row int) {
 			}
 			result.PushBack(l)
 			*/
-			b.moves.Add(row, cFirst, sc)
+			moves.Add(row, cFirst, sc)
 
 			flagFirst = true
 			count = 0

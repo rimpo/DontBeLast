@@ -11,12 +11,14 @@ type AI struct {
 }
 
 func (ai *AI) Play(m Move, currentID int) int {
-	ai.board.Move(m)
+	ai.board.Move(m, currentID)
 	//fmt.Printf("%d: play %v, (%d)\n", currentID, m, ai.board.CurrentCutCount)
 	//ai.board.Print()
+	moves := ai.board.GetAllMoves()
+	defer ai.board.allocator.Release(moves)
 
 	if ai.board.isLoser() {
-		//fmt.Printf("%d: lost\n", currentID)
+		//fmt.Printf("%d: lost!!\n", currentID)
 		ai.board.UndoMove(m)
 
 		if currentID == ai.myID {
@@ -36,10 +38,10 @@ func (ai *AI) Play(m Move, currentID int) int {
 		nextID = ai.myID
 	}
 
-	for i := 0; i < ai.board.moves.NoOfMoves; i++ {
-		if ai.board.isValidMove(ai.board.moves.AllMoves[i]) {
+	for i := 0; i < moves.NoOfMoves; i++ {
+		if ai.board.isValidMove(moves.AllMoves[i]) {
 
-			total += ai.Play(ai.board.moves.AllMoves[i], nextID)
+			total += ai.Play(moves.AllMoves[i], nextID)
 			count++
 		}
 	}
@@ -54,18 +56,20 @@ func (ai *AI) Play(m Move, currentID int) int {
 func (ai *AI) EvaluateMove() Move {
 
 	moves := ai.board.GetAllMoves()
-	fmt.Printf("total moves: %d\n", ai.board.moves.NoOfMoves)
+	defer ai.board.allocator.Release(moves)
+	//fmt.Printf("total moves: %d\n", moves.NoOfMoves)
 
 	scores := make([]int, moves.NoOfMoves)
 	var maxScore, bestMove int
 
 	for i := 0; i < moves.NoOfMoves; i++ {
-		if ai.board.isValidMove(ai.board.moves.AllMoves[i]) {
+		if ai.board.isValidMove(moves.AllMoves[i]) {
 			scores[i] = ai.Play(moves.AllMoves[i], ai.myID)
 			if maxScore < scores[i] {
 				maxScore = scores[i]
 				bestMove = i
 			}
+			break
 		}
 	}
 	fmt.Printf("scores: %v\n", scores)
