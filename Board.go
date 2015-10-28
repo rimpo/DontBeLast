@@ -12,6 +12,7 @@ type Board struct {
 	CurrentCutCount int
 	//allocator       Allocator
 	allocator CustomAllocator
+	moveCache map[int]*Moves
 }
 
 func (b *Board) Init() {
@@ -21,6 +22,19 @@ func (b *Board) Init() {
 	}
 	b.MaxCut = MaxRow * (MaxRow + 1) / 2
 	b.allocator.Init(1000)
+	b.InitMoveCache()
+}
+
+func (b *Board) InitMoveCache() {
+	b.moveCache = make(map[int]*Moves)
+	for i := 0; i < MaxRow; i++ {
+		moves := new(Moves)
+		b.GetAllMovesOnRow(i, moves)
+		b.moveCache[i+1] = moves
+	}
+	//fmt.Printf("moveCache=%v\n", b.moveCache)
+	//fmt.Printf("moveCache[4]=%v\n", b.moveCache[4])
+	//fmt.Printf("moveCache[5]=%v\n", b.moveCache[5])
 }
 
 func (b *Board) Deinit() {
@@ -72,9 +86,34 @@ func (b *Board) isLoser() bool {
 
 func (b *Board) GetAllMoves() *Moves {
 	moves := b.allocator.Capture()
-	for i := 0; i < MaxRow; i++ {
-		b.GetAllMovesOnRow(i, moves)
+	count := 0
+	flagFirst := true
+	row, col := 0, 0
+	for r := 0; r < MaxRow; r++ {
+		count = 0
+		for c := 0; c < len(b.Box[r]); c++ {
+			if b.Box[r][c] == 0 {
+				if flagFirst {
+					row = r
+					col = c
+					flagFirst = false
+				}
+				count++
+			} else {
+				if count > 0 {
+					moves.AddMoves(row, col, b.moveCache[count])
+				}
+				count = 0
+				flagFirst = true
+			}
+		}
+		if count > 0 {
+			moves.AddMoves(row, col, b.moveCache[count])
+		}
+		flagFirst = true
 	}
+
+	//moves.Print()
 	return moves
 }
 
@@ -142,21 +181,4 @@ func (b *Board) GetAllMovesOnRow(row int, moves *Moves) {
 		flagFirst = true
 	}
 	//fmt.Println(result)
-}
-
-func (b *Board) PrintAllMoves() {
-	/*for i := 0; i < MaxRow; i++ {
-		result := b.GetAllMovesOnRow(i)
-		for e := result.Front(); e != nil; e = e.Next() {
-			//fmt.Println(e.Value)
-			val := e.Value.(*list.List)
-			for v := val.Front(); v != nil; v = v.Next() {
-				fmt.Printf("%d ", v.Value)
-			}
-			fmt.Printf("\n")
-		}
-
-		fmt.Printf("Total Moves (%d): %d\n", i, result.Len())
-	}
-	*/
 }

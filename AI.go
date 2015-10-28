@@ -58,7 +58,6 @@ func (ai *AI) EvaluateMove() Move {
 	moves := ai.board.GetAllMoves()
 	defer ai.board.allocator.Release(moves)
 	//fmt.Printf("total moves: %d\n", moves.NoOfMoves)
-
 	scores := make([]int, moves.NoOfMoves)
 	var maxScore, bestMove int
 
