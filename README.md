@@ -1,4 +1,4 @@
-# DontBeLast in Golang
+# DontBeLast (in Golang)
 DontBeLast is turn based 2 player game.(Human vs AI)<br>
 
 Initial board:<br>
